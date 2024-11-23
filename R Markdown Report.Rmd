@@ -1,0 +1,147 @@
+---
+title: "Comparative Analysis of ML Algorithms"
+author: "Gautam Krishna"
+output: 
+  html_document: 
+    highlight: tango
+    theme: simplex
+---
+
+## Introduction
+
+The Sonar dataset is a widely recognized dataset in machine learning, focusing on the classification of sonar signals as either "Rock" or "Metal." This project evaluates the performance of four machine learning algorithms—**KNN**, **Decision Tree**, **SVM**, and **Naive Bayes**—using metrics such as accuracy, precision, recall, F1 score, and error rate. The insights from this analysis can be applied to real-world problems like marine exploration and object detection.
+
+---
+
+## Scope of Analysis
+
+The scope of this analysis includes the following key aspects:
+1. **Algorithm Evaluation**:
+   - Comparing accuracy, precision, recall, F1 score, and error rate for each model.
+2. **Preprocessing and Feature Scaling**:
+   - Investigating the impact of normalization on algorithms like KNN and SVM.
+3. **Comparison of Model Performance**:
+   - Determining the most effective algorithm for sonar signal classification.
+4. **Insights for Real-world Applications**:
+   - Generating insights for scenarios requiring fast and accurate signal classification.
+
+---
+
+## Analysis of Dataset
+
+The Sonar dataset contains 208 samples, each with 60 continuous features representing signal characteristics. The target variable (`Class`) categorizes each sample as either "Rock" or "Metal." 
+
+**Exploratory Data Analysis (EDA):**
+-- **Class Distribution**: The dataset is balanced, with an equal number of "Rock" and "Metal" samples.
+-- **Feature Correlation**: Many features exhibit high correlation, affecting algorithms like KNN and Decision Trees.
+-- **Preprocessing**:
+   - Normalization ensures equal contribution of features.
+   - Data splitting (80% training, 20% testing) allows robust evaluation.
+
+---
+
+## Implementation of Algorithms in R
+
+```{r setup, echo=TRUE, message=FALSE, warning=FALSE}
+# Load necessary libraries
+library(class)
+library(rpart)
+library(rpart.plot)
+library(e1071)
+library(mlbench)
+```
+
+## Load and Preprocess Data
+
+```{r load_data, echo=TRUE}
+# Load Sonar dataset from the mlbench package
+data(Sonar)
+sonar_data <- Sonar
+
+# Preprocess data: convert Class to a factor and normalize other features
+sonar_data$Class <- factor(sonar_data$Class, levels = c("R", "M"))
+normalized_data <- scale(sonar_data[, -61])  # Exclude Class column
+normalized_data <- as.data.frame(normalized_data)
+normalized_data$Class <- sonar_data$Class
+```
+
+## Split Data into Training and Testing Sets
+
+```{r split_data, echo=TRUE}
+# Data splitting: 80% training, 20% testing
+set.seed(123)
+split <- sample(2, nrow(normalized_data), replace = TRUE, prob = c(0.8, 0.2))
+train_data <- normalized_data[split == 1, ]
+test_data <- normalized_data[split == 2, ]
+```
+
+## Model Accuracy Calculation
+
+We define a function to calculate the accuracy of the models based on their predictions.
+
+```{r accuracy_function, echo=TRUE}
+# Model function to compute accuracy
+model_accuracy <- function(model, train_data, test_data) {
+  pred <- predict(model, test_data, type = "class")
+  confusion_matrix <- table(test_data$Class, pred)
+  accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+  return(accuracy)
+}
+```
+
+## KNN Classification
+
+```{r knn_classification, echo=TRUE}
+# KNN Classification
+knn_predicted <- knn(train = train_data[, -61], test = test_data[, -61], 
+                     cl = train_data$Class, k = 5)
+knn_accuracy <- mean(knn_predicted == test_data$Class)
+knn_accuracy
+```
+
+## Decision Tree Classification
+
+```{r tree_classification, echo=TRUE}
+# Decision Tree Classification
+tree_model <- rpart(Class ~ ., data = train_data, method = "class")
+rpart.plot(tree_model)
+tree_accuracy <- model_accuracy(tree_model, train_data, test_data)
+tree_accuracy
+```
+
+## SVM Classification
+
+```{r svm_classification, echo=TRUE}
+# SVM Classification
+svm_model <- svm(Class ~ ., data = train_data, kernel = "linear")
+svm_accuracy <- model_accuracy(svm_model, train_data, test_data)
+svm_accuracy
+```
+
+## Naive Bayes Classification
+
+```{r nb_classification, echo=TRUE}
+# Naive Bayes Classification
+nb_model <- naiveBayes(Class ~ ., data = train_data)
+nb_accuracy <- model_accuracy(nb_model, train_data, test_data)
+nb_accuracy
+```
+
+## Compare the Models
+
+Here, we compare the accuracy of all models and identify the one with the highest accuracy.
+
+```{r compare_models, echo=TRUE}
+# Store accuracies in a vector and find the highest
+accuracies <- c(KNN = knn_accuracy, DecisionTree = tree_accuracy, SVM = svm_accuracy, NaiveBayes = nb_accuracy)
+best_algorithm <- names(accuracies)[which.max(accuracies)]
+max_accuracy <- max(accuracies)
+
+# Print results
+accuracies
+cat("The algorithm with the highest accuracy is:", best_algorithm, "with an accuracy of", round(max_accuracy, 4))
+```
+
+## Conclusion
+
+Based on the results, we determine the classification algorithm that performs the best on the Sonar dataset. The comparison of KNN, Decision Tree, SVM, and Naive Bayes models provides insight into which model is most suitable for this particular dataset.
